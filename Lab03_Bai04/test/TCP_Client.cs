@@ -172,38 +172,52 @@ namespace test
         private void btnSave_Click(object sender, EventArgs e)
         {
             SaveFileDialog sfd = new SaveFileDialog();
-            sfd.ShowDialog();
-            FileStream fs;
-            if (sfd.FileName == "")
-            {
-                MessageBox.Show("Chon file", "WARNING", MessageBoxButtons.OK);
-                return;
-            }
-            else
-            {
-                fs = new FileStream(sfd.FileName, FileMode.Create);
-            }
+
 
             DialogResult m = MessageBox.Show("Bạn có muốn thực hiện lưu file theo định dạng Word. \nNếu chọn KHÔNG mặc định sẽ là file text", "WARNING", MessageBoxButtons.YesNo);
             if (m == DialogResult.Yes)
             {
-                var doc = DocX.Create(fs);
-                doc.InsertParagraph(rtxbDataReceive.Text);
-                doc.Save();
-                lsbSaveFile.Items.Add(sfd.FileName);
+                sfd.FileName = "myText";
+                sfd.DefaultExt = "docx";
+                sfd.ShowDialog();
+                if (sfd.FileName == "")
+                {
+                    MessageBox.Show("Chọn file", "WARNING", MessageBoxButtons.OK);
+                    return;
+                }
+                else
+                {
+                    FileStream fs = new FileStream(sfd.FileName, FileMode.Create);
+                    var doc = DocX.Create(fs);
+                    doc.InsertParagraph(rtxbDataReceive.Text);
+                    doc.Save();
+                    lsbSaveFile.Items.Add(sfd.FileName);
+                    fs.Close();
+                }
+
             }
             else if (m == DialogResult.No)
             {
-                using (StreamWriter sw = new StreamWriter(fs))
+                    sfd.FileName = "myText";
+                    sfd.DefaultExt = "txt";
+                    sfd.ShowDialog();
+                if (sfd.FileName == "")
                 {
+                    MessageBox.Show("Chọn file", "WARNING", MessageBoxButtons.OK);
+                    return;
+                }
+                else
+                {
+                    FileStream fs = new FileStream(sfd.FileName, FileMode.Create);
                     string output = rtxbDataReceive.Text;
-                    sw.Flush();
+                    StreamWriter sw = new StreamWriter(fs);
                     sw.Write(output);
+                    sw.Flush();
                     lsbSaveFile.Items.Add(sfd.FileName);
+                    fs.Close();
+
                 }
             }
-            fs.Close();
-            
         }
 
         //**Xoa noi dung tren textbox**
@@ -255,13 +269,13 @@ namespace test
                 try
                 {
                     FileStream fs = new FileStream(curItem, FileMode.Open);
-                    if (Path.GetExtension(curItem).ToLower() == ".txt")
+                    if (curItem.EndsWith("txt"))
                     {
                         StreamReader sr = new StreamReader(fs);
                         string content = sr.ReadToEnd();
                         rtxbDataSend.Text = content;
                     }
-                    else if (Path.GetExtension(curItem).ToLower() == ".doc")
+                    else if (curItem.EndsWith("docx"))
                     {
                         var doc = DocX.Load(fs);
                         rtxbDataSend.Text = doc.Text;

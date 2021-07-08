@@ -28,7 +28,7 @@ namespace test
         {
             InitializeComponent();
         }
-                private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             if (MessageBox.Show("Bạn thật sự muốn tắt chương trình ?", "Thoát", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) == DialogResult.OK)
             {
@@ -89,14 +89,12 @@ namespace test
                     }
                     else if (status == false)
                         Remove_Client(client);
-
                 }
                 catch
                 {
                     Remove_Client(client);
                     break;
                 }
-
             }
         }
         public void Remove_Client(Client client)
