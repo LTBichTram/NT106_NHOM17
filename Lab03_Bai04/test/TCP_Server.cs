@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -59,7 +58,7 @@ namespace test
                 client.UserName = Read.ReadLine();
 
                 MembersList.Add(client);
-                lsbMembers.Items.Insert(0, $"New Connect from {client.tcpClient.Client.RemoteEndPoint} || {client.UserName}");
+                lsbMembers.Items.Insert(0, $"Kết nối từ {client.tcpClient.Client.RemoteEndPoint} || {client.UserName}");
 
                 //Send Thread 
                 Thread _thread = new Thread(Send);
@@ -71,24 +70,26 @@ namespace test
         public void Send(object o)
         {
             Client client = (Client)o;
-            while (client.tcpClient.Connected)
+            bool status = true;
+            while (client.tcpClient.Connected && status == true)
             {
                 byte[] sendBytes = new byte[50000];
-
                 try
                 {
                     StreamReader sr = new StreamReader(client.tcpClient.GetStream());
-                    //string message;
-                    //do
-                    //{ message = sr.ReadLine(); } while (message == null);
                     Receive(ref sendBytes, client);
                     //nap sendBytes vao 1 ham xu ly du lieu
-                    sendBytes = FixData(ref sendBytes);
+                    status = FixData(ref sendBytes);
+                    if (status == true)
+                    {
+                        //**gui tra du lieu cho Client**
+                        NetworkStream writeStream = client.tcpClient.GetStream();
+                        writeStream.Write(sendBytes, 0, sendBytes.Length);
+                        writeStream.Flush();
+                    }
+                    else if (status == false)
+                        Remove_Client(client);
 
-                    //**gui tra du lieu cho Client**
-                    NetworkStream writeStream = client.tcpClient.GetStream();
-                    writeStream.Write(sendBytes, 0, sendBytes.Length);
-                    writeStream.Flush();
                 }
                 catch
                 {
@@ -115,36 +116,37 @@ namespace test
         public void Receive(ref Byte[] ReceiveBytes, Client client)
         {
             NetworkStream readStream = client.tcpClient.GetStream();
-            //if (message[0] == '1')
-            //{
                 readStream.Read(ReceiveBytes, 0, ReceiveBytes.Length);
-            //}
-            //else if (message[0] == '0')
-            //{
-            //    Remove_Client(client);
-            //}
-
         }
 
         //**Ham xu ly du lieu**
-        public byte[] FixData(ref byte[] sendBytes)
+        public bool FixData(ref byte[] sendBytes)
         {
             string Data = Encoding.UTF8.GetString(sendBytes);
-            string temp = RightPlace(ref Data);
-            Data = CapitalizeFirst(ref temp);
-            return Encoding.UTF8.GetBytes(Data);
+            if(Data[0] == '0')
+            {
+                return false;
+            }
+            else if(Data[0] == '1')
+            {
+                Data = Data.Remove(0, 2).Replace("\0","");
+                string temp = RightPlace(ref Data);
+                Data = CapitalizeFirst(ref temp);
+                sendBytes = Encoding.UTF8.GetBytes(Data);            
+            }
+            return true;
         }
 
         //Dat dung cho
         public string RightPlace(ref string Data)
         {
             StringBuilder sb = new StringBuilder(Data = Data.Trim());
-            if (!(Data[Data.Length - 1] == '.' || Data[Data.Length - 1] == '\0' || Data[Data.Length - 1] == '?' || Data[Data.Length - 1] == '!') || Data[Data.Length - 1] == ',' || Data[Data.Length - 1] == ':')
+            if (!(Data[Data.Length - 1] == '.' || Data[Data.Length - 1] == '?' || Data[Data.Length - 1] == '!') || Data[Data.Length - 1] == ',' || Data[Data.Length - 1] == ':')
             {
                 sb.Append(".");
             }
 
-            sb.Replace(",", ",$$$").Replace(".", ".$$$").Replace("!", "!$$$").Replace("?", "?$$$").Replace(":", ":$$$").Replace(";", ";$$$").Replace("…", "…$$$").Replace("\r\n", "\r\n$$$").Replace("\r", "\r$$$").Replace("\n", "\n$$$").Replace("\0","");
+            sb.Replace(",", ",$$$").Replace(".", ".$$$").Replace("!", "!$$$").Replace("?", "?$$$").Replace(":", ":$$$").Replace(";", ";$$$").Replace("…", "…$$$").Replace("\r\n", "\r\n$$$").Replace("\r", "\r$$$").Replace("\n", "\n$$$");
             string[] sentences = sb.ToString().Split("$$$", StringSplitOptions.RemoveEmptyEntries);
             StringBuilder sb1 = new StringBuilder();
             for (int i = 0; i < sentences.Length; i++)

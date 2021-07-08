@@ -75,7 +75,7 @@ namespace test
             this.lsbSaveFile.Location = new System.Drawing.Point(622, 76);
             this.lsbSaveFile.Margin = new System.Windows.Forms.Padding(2);
             this.lsbSaveFile.Name = "lsbSaveFile";
-            this.lsbSaveFile.Size = new System.Drawing.Size(220, 184);
+            this.lsbSaveFile.Size = new System.Drawing.Size(346, 184);
             this.lsbSaveFile.TabIndex = 3;
             this.lsbSaveFile.MouseDown += new System.Windows.Forms.MouseEventHandler(this.lsbSaveFile_MouseDown);
             // 
@@ -198,7 +198,7 @@ namespace test
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(858, 376);
+            this.ClientSize = new System.Drawing.Size(979, 376);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.btnOpen);

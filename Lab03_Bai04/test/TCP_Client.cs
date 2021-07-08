@@ -2,7 +2,6 @@
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -101,6 +100,7 @@ namespace test
             SaveFileDialog sfd = new SaveFileDialog();
             sfd.ShowDialog();
             FileStream fs;
+            string output;
 
             if (sfd.FileName != "")
             {
@@ -108,25 +108,22 @@ namespace test
             }
             else
             {
-                MessageBox.Show("Chon File!", "WARNING", MessageBoxButtons.OK);
+                MessageBox.Show("Chọn File!", "WARNING", MessageBoxButtons.OK);
                 return;
             }
             using (StreamWriter sw = new StreamWriter(fs))
             {
-                string output = rtxbDataSend.Text;
+                output = rtxbDataSend.Text;
                 sw.Flush();
                 sw.Write(output);
             }
             if (fs != null)
             {
-                MessageBox.Show("Da Ghi Thanh Cong", "Thanh Cong", MessageBoxButtons.OK);
+                MessageBox.Show("Đã ghi thành công!", "Thành Công", MessageBoxButtons.OK);
             }
             fs.Close();
-            //writeStream = tcpClient.GetStream();
-            //string Send_Message = "1@" + UserName;
-            //StreamWriter sw_send = new StreamWriter(tcpClient.GetStream());
-            //sw_send.WriteLine(Send_Message);
-            tcpClient.Client.SendFile(sfd.FileName);
+            byte[] buffer = Encoding.UTF8.GetBytes("1@" + output); 
+            tcpClient.Client.Send(buffer);
         }
 
         //**Thiet Lap Ket Noi**
@@ -187,12 +184,13 @@ namespace test
                 fs = new FileStream(sfd.FileName, FileMode.Create);
             }
 
-            DialogResult m = MessageBox.Show("Bạn có muốn thực hiện lưu file theo định dạng Word \n Nếu chọn không mặc định sẽ là file text", "WARNING", MessageBoxButtons.YesNo);
+            DialogResult m = MessageBox.Show("Bạn có muốn thực hiện lưu file theo định dạng Word. \nNếu chọn KHÔNG mặc định sẽ là file text", "WARNING", MessageBoxButtons.YesNo);
             if (m == DialogResult.Yes)
             {
                 var doc = DocX.Create(fs);
                 doc.InsertParagraph(rtxbDataReceive.Text);
                 doc.Save();
+                lsbSaveFile.Items.Add(sfd.FileName);
             }
             else if (m == DialogResult.No)
             {
@@ -201,16 +199,17 @@ namespace test
                     string output = rtxbDataReceive.Text;
                     sw.Flush();
                     sw.Write(output);
+                    lsbSaveFile.Items.Add(sfd.FileName);
                 }
             }
             fs.Close();
-            lsbSaveFile.Items.Add(sfd.FileName);
+            
         }
 
         //**Xoa noi dung tren textbox**
         private void btnClear_Click(object sender, EventArgs e)
         {
-            switch (MessageBox.Show("Xoa tat ca", "WARNING", MessageBoxButtons.YesNo))
+            switch (MessageBox.Show("Xoá tất cả?", "WARNING", MessageBoxButtons.YesNo))
             {
                 case DialogResult.Yes:
                     rtxbDataReceive.Clear();
@@ -231,24 +230,23 @@ namespace test
                 try
                 {
                     FileStream fs = new FileStream(ofd.FileName, FileMode.OpenOrCreate);
-                    var doc = DocX.Load(fs);
-                    rtxbDataSend.Text = doc.Text;
+                    if (ofd.FileName.EndsWith(".txt"))
+                    {
+                        StreamReader sr = new StreamReader(fs);
+                        rtxbDataSend.Text = sr.ReadToEnd();
+                    }
+                    else if (ofd.FileName.EndsWith(".docx"))
+                    {
+                        var doc = DocX.Load(fs);
+                        rtxbDataSend.Text = doc.Text;
+                    }
                     fs.Close();
                 }
                 catch (Exception)
                 {
-                    try
-                    {
-                        FileStream fs = new FileStream(ofd.FileName, FileMode.OpenOrCreate);
-                        StreamReader sr = new StreamReader(fs);
-                        rtxbDataSend.Text = sr.ReadToEnd();
-                        fs.Close();
-                    }
-                    catch
-                    {
-                        MessageBox.Show("Không thể mở thư mục!", "Thông báo", MessageBoxButtons.OK);
-                    }
-                }     
+                    MessageBox.Show("Không thể mở thư mục!", "Thông báo", MessageBoxButtons.OK);
+
+                }    
 
             }
             else
@@ -257,30 +255,24 @@ namespace test
                 try
                 {
                     FileStream fs = new FileStream(curItem, FileMode.Open);
-                    var doc = DocX.Load(fs);
-                    rtxbDataSend.Text = doc.Text;
+                    if (Path.GetExtension(curItem).ToLower() == ".txt")
+                    {
+                        StreamReader sr = new StreamReader(fs);
+                        string content = sr.ReadToEnd();
+                        rtxbDataSend.Text = content;
+                    }
+                    else if (Path.GetExtension(curItem).ToLower() == ".doc")
+                    {
+                        var doc = DocX.Load(fs);
+                        rtxbDataSend.Text = doc.Text;
+                    }
                     fs.Close();
                 }
                 catch (Exception)
                 {
-                    try
-                    {
-                        FileStream fs = new FileStream(curItem, FileMode.Open);
-                        StreamReader sr = new StreamReader(fs);
-                        string content = sr.ReadToEnd();
-                        rtxbDataSend.Text = content;
-                        fs.Close();
-                    }
-                    catch
-                    {
-                        MessageBox.Show("Không thể mở thư mục!", "Thông báo", MessageBoxButtons.OK);
-                    }
-                } //đù cách này cũng ko đc rồi, thôi không sao đâu ông, mà mình vẫn đọc file word được đúng không ông, Ừm đọc đc ghi đc á
-                // chỉ là lưu có vấn đề đúng hem ông, lưu đc luôn mà
-                //vậy ổn rùi, Thôi Trâm Nghỉ đi, tui check lại code sáng tui gửi bản hoàn chỉnh nhất nha, hay ông nghỉ luôn đi
-                // xong mai dạy sáng làm trên máy tui cho dễ check nè, Ừm giờ Trâm push nó lên github giúp tui nha, oki khoa, tui out luôn á
-                //sao khoa không cop á, để nó có version control cho dễ á, mai mình sửa gì còn biết đường quay về á, bản này cũng gần hoàn chỉnh rồi
-                //oki ông
+
+                    MessageBox.Show("Không thể mở thư mục!", "Thông báo", MessageBoxButtons.OK);
+                }
             }
 
         }
@@ -308,13 +300,19 @@ namespace test
 
         private void TCP_Client_FormClosing_1(object sender, FormClosingEventArgs e)
         {
-            if (tcpClient.Connected)
+
+                DialogResult m = MessageBox.Show("Bạn có muốn tắt chương trình ?", "WARNING", MessageBoxButtons.YesNo);
+            if (m == DialogResult.Yes)
             {
-                readStream.Close();
-                writeStream.Close();
-                tcpClient.Close();
+                if (btnDisconnect.Enabled == true)
+                {
+                    btnDisconnect_Click(sender, e);
+                }
             }
-            _Thread.Abort();
+            else if (m == DialogResult.No)
+            {
+                return;
+            }
         }
     }
 }
